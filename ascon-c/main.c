@@ -205,8 +205,8 @@ void print(unsigned char c, unsigned char* x, unsigned long long xlen) {
 }
 
 int main() {
-  unsigned char n[CRYPTO_NPUBBYTES] = "NNNNNNNNNNNNNNNN";
-  unsigned char k[CRYPTO_KEYBYTES] = "BBBBBBBBBBBBBBBBBBBB";
+  unsigned char n[CRYPTO_NPUBBYTES] = "Nonce";
+  unsigned char k[CRYPTO_KEYBYTES] = "Key";
   unsigned char a[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
   unsigned char c[1024], h[32], t[32];
   unsigned long long alen = 16;
@@ -219,7 +219,7 @@ int main() {
   unsigned char ad[CRYPTO_ABYTES]="";
   unsigned char nsec[CRYPTO_ABYTES]="";
 
-  char pl[CRYPTO_BYTES]="AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+  char pl[CRYPTO_BYTES]="Plaintext";
   
   int result = 0;
   
