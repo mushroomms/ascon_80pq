@@ -10,8 +10,6 @@
 
 #define CRYPTO_BYTES 256
 
-#ifdef ASCON_AEAD_RATE
-
 forceinline void ascon_loadkey(ascon_key_t* key, const uint8_t* k) {
   key->x[0] = KEYROT(0, LOADBYTES(k, 4));
   key->x[1] = LOADBYTES(k + 4, 8);
@@ -205,7 +203,7 @@ void print(unsigned char c, unsigned char* x, unsigned long long xlen) {
 }
 
 int main() {
-  unsigned char n[CRYPTO_NPUBBYTES] = "Nonce";
+  unsigned char n[CRYPTO_NPUBBYTES];
   unsigned char k[CRYPTO_KEYBYTES] = "Key";
   unsigned char a[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
   unsigned char c[1024], h[32], t[32];
@@ -225,11 +223,11 @@ int main() {
   
   if (sodium_init() < 0) {
         printf("panic! the library couldn't be initialized; it is not safe to use");
+  	return 0;
   }
 
+  // Generating random bytes for nonce
   randombytes_buf(n, sizeof(n));
-
-#if defined(CRYPTO_AEAD)
 
   strcpy(plaintext,pl);
 
@@ -262,9 +260,5 @@ int main() {
   print('a', a, alen);
   printf(" ");
   printf("\n");
-  
-#endif
   return result;
 }
-
-#endif
