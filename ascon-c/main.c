@@ -8,7 +8,7 @@
 #include <string.h>
 #include <sodium.h>
 
-#define CRYPTO_BYTES 256
+#define CRYPTO_BYTES 64
 
 forceinline void ascon_loadkey(ascon_key_t* key, const uint8_t* k) {
   key->x[0] = KEYROT(0, LOADBYTES(k, 4));
