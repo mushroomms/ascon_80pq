@@ -7,3 +7,13 @@ To compile the file:
 ```
 gcc main.c permutations.c printstate.c -o ascon -lsodium
 ```
+
+To download libsodium:
+Download a tarball of libsodium, preferably the latest stable version, then follow the ritual:
+[libsodium](https://download.libsodium.org/libsodium/releases/)
+
+```
+./configure
+make && make check
+sudo make install
+```
