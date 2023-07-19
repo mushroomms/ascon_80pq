@@ -209,8 +209,6 @@ int main() {
   unsigned long long alen = 16;
   unsigned long long mlen = 16;
   unsigned long long clen = CRYPTO_ABYTES;
-  
-  unsigned char cipher[CRYPTO_BYTES];
 
   int result = 0;
     
