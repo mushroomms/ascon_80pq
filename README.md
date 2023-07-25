@@ -1,6 +1,6 @@
 # ascon_c
 
-Ascon C implementation with libsodium which generates a random string that is safe to use for cryptography
+Ascon_80pq C implementation with libsodium which generates a random nonce that is safe to use for cryptography
 
 To compile the file:
 
