@@ -210,7 +210,7 @@ long get_mem_usage(){
   return myusage.ru_maxrss;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
   unsigned char k[CRYPTO_KEYBYTES];
   unsigned char a[16] = "abc123";
   unsigned char nonce[CRYPTO_NPUBBYTES], h[32], t[32], *c, *plaintext;
