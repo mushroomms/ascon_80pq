@@ -280,6 +280,13 @@ int main(int argc, char *argv[]) {
       return 0;
   }
 
+  // Open the PMK key.
+  PMK_Key = fopen("PMK.key", "rb");
+  if (PMK_Key == NULL) {
+    printf("Error opening PMK key\n");
+    return 0;
+  }
+
   // reading key
   fread(k, 1, CRYPTO_KEYBYTES, PMK_Key);
   printf("\nKey: %s\n", k);
