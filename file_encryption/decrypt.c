@@ -276,8 +276,8 @@ int main() {
   }
 
   else {
-          printf("\n%s is not a valid argument\n", argv[1]);
-          return 0;
+      printf("\n%s is not a valid argument\n", argv[1]);
+      return 0;
   }
 
   // reading key
