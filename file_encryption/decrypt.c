@@ -227,29 +227,57 @@ int main() {
   // Declare file pointers.
   FILE *hacklab_in, *fp_decrypt, *PMK_Key;
   
-  // Open the input file.
-  hacklab_in = fopen("public.key.hacklab", "rb");
+  if (strcmp(argv[1], "secret") == 0) {
+      // Open the secret key hacklab file.
+      hacklab_in = fopen("secret.key.hacklab", "rb");
+      if (hacklab_in == NULL) {
+              printf("Error opening secret key hacklab.\n");
+              return 1;
+      }
 
-  // Check if the file was opened successfully.
-  if (hacklab_in == NULL) {
-    printf("Error opening file.\n");
-    return 1;
+      // Open the decrypt file.
+      fp_decrypt = fopen("secret.key", "wb");
+      if (fp_decrypt == NULL) {
+              printf("Error opening secret key.\n");
+              return 1;
+      }
   }
 
-  // Open the decrypt file.
-  fp_decrypt = fopen("decrypt.key", "wb");
+  else if (strcmp(argv[1], "public") == 0) {
+      // Open the public key hacklab file.
+      hacklab_in = fopen("public.key.hacklab", "rb");
+      if (hacklab_in == NULL) {
+              printf("Error opening public key hacklab.\n");
+              return 1;
+      }
 
-  // check if the file was opened successfully.
-  if (fp_decrypt == NULL) {
-    printf("Error opening file.\n");
-    return 1;
+      // Open the decrypt file.
+      fp_decrypt = fopen("public.key", "wb");
+      if (fp_decrypt == NULL) {
+              printf("Error opening public key.\n");
+              return 1;
+      }
   }
 
-  // Open the PMK key.
-  PMK_Key = fopen("PMK.key", "rb");
-  if (PMK_Key == NULL) {
-    printf("Error opening PMK key\n");
-    return 0;
+  else if (strcmp(argv[1], "nbit") == 0){
+      // Open the input file.
+      hacklab_in = fopen("nbit.key.hacklab", "rb");
+      if (hacklab_in == NULL) {
+              printf("Error opening nbit key.\n");
+              return 1;
+      }
+
+      // Open the output file.
+      fp_decrypt = fopen("nbit.key", "wb");
+      if (fp_decrypt == NULL) {
+              printf("Error opening nbit key.\n");
+              return 1;
+      }
+  }
+
+  else {
+          printf("\n%s is not a valid argument\n", argv[1]);
+          return 0;
   }
 
   // reading key

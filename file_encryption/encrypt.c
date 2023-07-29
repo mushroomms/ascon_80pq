@@ -210,7 +210,7 @@ long get_mem_usage(){
   return myusage.ru_maxrss;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
   unsigned char k[CRYPTO_KEYBYTES];
   unsigned char a[16] = "abc123";
   unsigned char n[CRYPTO_NPUBBYTES], h[32], t[32], *c, *plaintext;
@@ -228,22 +228,57 @@ int main() {
   // Declare file pointers.
   FILE *fp_in, *fp_out, *PMK_Key;
 
-  // Open the input file.
-  fp_in = fopen("public.key", "rb");
+  if (strcmp(argv[1], "secret") == 0) {
+      // Open the secret key hacklab file.
+      fp_in = fopen("secret.key", "rb");
+      if (fp_in == NULL) {
+              printf("Error opening secret key hacklab.\n");
+              return 1;
+      }
 
-  // Check if the file was opened successfully.
-  if (fp_in == NULL) {
-    printf("Error opening file.\n");
-    return 1;
+      // Open the decrypt file.
+      fp_out = fopen("secret.key.hacklab", "wb");
+      if (fp_out == NULL) {
+              printf("Error opening secret key.\n");
+              return 1;
+      }
   }
 
-  // Open the output file.
-  fp_out = fopen("public.key.hacklab", "wb");
+  else if (strcmp(argv[1], "public") == 0) {
+      // Open the public key hacklab file.
+      fp_in = fopen("public.key", "rb");
+      if (fp_in == NULL) {
+              printf("Error opening public key hacklab.\n");
+              return 1;
+      }
 
-  // Check if the file was opened successfully.
-  if (fp_out == NULL) {
-    printf("Error opening file.\n");
-    return 1;
+      // Open the decrypt file.
+      fp_out = fopen("public.key.hacklab", "wb");
+      if (fp_out == NULL) {
+              printf("Error opening public key.\n");
+              return 1;
+      }
+  }
+
+  else if (strcmp(argv[1], "nbit") == 0){
+    // Open the input file.
+    fp_in = fopen("nbit.key", "rb");
+    if (fp_in == NULL) {
+      printf("Error opening nbit key.\n");
+      return 1;
+    }
+
+    // Open the output file.
+    fp_out = fopen("nbit.key.hacklab", "wb");
+    if (fp_out == NULL) {
+      printf("Error opening nbit key.\n");
+      return 1;
+    }
+  }
+
+  else {
+    printf("\n%s is not a valid argument\n", argv[1]);
+    return 0;
   }
 
   // Open the PMK key.
