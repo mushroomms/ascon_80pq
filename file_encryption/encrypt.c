@@ -9,6 +9,7 @@
 #include <string.h>
 #include <sodium.h>
 #include <time.h>
+#include <sys/time.h>
 #include <sys/resource.h>
 
 forceinline void ascon_loadkey(ascon_key_t* key, const uint8_t* k) {
@@ -211,12 +212,14 @@ long get_mem_usage(){
 }
 
 int main(int argc, char *argv[]) {
+  #define CHUNK_SIZE 4096
+
   unsigned char k[CRYPTO_KEYBYTES];
   unsigned char a[16] = "abc123";
-  unsigned char n[CRYPTO_NPUBBYTES], h[32], t[32], *c, *plaintext;
+  unsigned char n[CRYPTO_NPUBBYTES], h[32], t[32], c[CHUNK_SIZE + CRYPTO_ABYTES], plaintext[CHUNK_SIZE];
+  unsigned int plaintext_len;
   unsigned long long alen = 16;
-  unsigned long long mlen = 16;
-  unsigned long long clen = CRYPTO_ABYTES;
+  unsigned long long clen;
 
   int result = 0;
     
@@ -229,51 +232,27 @@ int main(int argc, char *argv[]) {
   FILE *fp_in, *fp_out, *PMK_Key;
 
   if (strcmp(argv[1], "secret") == 0) {
-      // Open the secret key hacklab file.
-      fp_in = fopen("secret.key", "rb");
-      if (fp_in == NULL) {
-              printf("Error opening secret key hacklab.\n");
-              return 1;
-      }
+    // Open the secret key hacklab file.
+    fp_in = fopen("secret.key", "rb");
 
-      // Open the decrypt file.
-      fp_out = fopen("secret.key.hacklab", "wb");
-      if (fp_out == NULL) {
-              printf("Error opening secret key.\n");
-              return 1;
-      }
+    // Open the decrypt file.
+    fp_out = fopen("secret.key.hacklab", "wb");
   }
 
-  else if (strcmp(argv[1], "public") == 0) {
-      // Open the public key hacklab file.
-      fp_in = fopen("public.key", "rb");
-      if (fp_in == NULL) {
-              printf("Error opening public key hacklab.\n");
-              return 1;
-      }
+  else if (strcmp(argv[1], "pub") == 0) {
+    // Open the public key hacklab file.
+    fp_in = fopen("public.key", "rb");
 
-      // Open the decrypt file.
-      fp_out = fopen("public.key.hacklab", "wb");
-      if (fp_out == NULL) {
-              printf("Error opening public key.\n");
-              return 1;
-      }
+    // Open the decrypt file.
+    fp_out = fopen("public.key.hacklab", "wb");
   }
 
-  else if (strcmp(argv[1], "nbit") == 0){
+  else if (strcmp(argv[1], "nbit") == 0) {
     // Open the input file.
     fp_in = fopen("nbit.key", "rb");
-    if (fp_in == NULL) {
-      printf("Error opening nbit key.\n");
-      return 1;
-    }
 
     // Open the output file.
     fp_out = fopen("nbit.key.hacklab", "wb");
-    if (fp_out == NULL) {
-      printf("Error opening nbit key.\n");
-      return 1;
-    }
   }
 
   else {
@@ -287,52 +266,62 @@ int main(int argc, char *argv[]) {
     printf("Error opening PMK key\n");
     return 0;
   }
+  if (fp_in == NULL) {
+    printf("Error opening key to encrypt.\n");
+    return 1;
+  }
+
+  if (fp_out == NULL) {
+    printf("Error opening file for ciphertext.\n");
+    return 1;
+  }
 
   // reading key
   fread(k, 1, CRYPTO_KEYBYTES, PMK_Key);
-  printf("\nKey: %s\n", k);
+  
+  printf("\n");
+  print('k', k, sizeof k);
 
   // Write the nonce to the output file.
   randombytes_buf(n, sizeof(n));
   fwrite(n, sizeof(unsigned char), sizeof(n), fp_out);
 
-  printf("\n");
   print('n', n, CRYPTO_NPUBBYTES);
 
-  // calculating the size of the file
-  fseek(fp_in, 0L, SEEK_END);
-  long int plaintext_len = ftell(fp_in);
-  fseek(fp_in, 0L, SEEK_SET);
+  printf("\n[*] Attempting to encrypt key\n");
 
-  plaintext = malloc(plaintext_len);
-  c = malloc(plaintext_len + 16);
-
-  fread(plaintext, 1, plaintext_len, fp_in);
-
-  printf("\n[*] Attempting to encrypt public key\n");
-
-  clock_t time;
   long baseline = get_mem_usage();
-  time = clock();
 
-	result |= crypto_aead_encrypt(c, &clen, plaintext, plaintext_len, a, alen, (void*)0, n, k);
+  // Start measuring time
+  struct timeval begin, end;
+  gettimeofday(&begin, 0);
+  
+  // Start measuring CPU time
+  clock_t start_cpu= clock();
 
-  time = clock() - time;
+  while(plaintext_len = fread(plaintext, 1, CHUNK_SIZE, fp_in)){
+    result |= crypto_aead_encrypt(c, &clen, plaintext, plaintext_len, a, alen, (void*)0, n, k);
+    fwrite(c, 1, clen, fp_out);
+  }
+
+  gettimeofday(&end, 0);
+  long seconds = end.tv_sec - begin.tv_sec;
+  long microseconds = end.tv_usec - begin.tv_usec;
+  double elapsed = seconds + microseconds*1e-6;
+  
+  clock_t end_cpu = clock();
+  double time_taken = (double)(end_cpu - start_cpu)/CLOCKS_PER_SEC;
+  
   long memory_usage = get_mem_usage() - baseline;
-  double time_taken = ((double)time)/CLOCKS_PER_SEC; // calculate the elapsed time
 
-  fwrite(c, 1, clen, fp_out);
+  printf("\n[+] Key encrypted\n");
 
-  printf("\n[+] Public key encrypted\n");
-  printf("\nCiphertext len: %lli\n", clen);
-  printf("\nASCON-80pq took %f seconds to encrypt\n", time_taken);
+  printf("\nASCON-80pq took %f seconds to encrypt (WALL TIME)\n", elapsed);
+  printf("ASCON-80pq took %f seconds to encrypt (CPU TIME)\n", time_taken);
   printf("ASCON-80pq used %ld bytes of memory to encrypt\n", memory_usage);
 
   fclose(fp_in);
   fclose(fp_out);
-
-  free(plaintext);
-  free(c);
 
   return 0;
 }
