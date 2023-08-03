@@ -9,7 +9,6 @@
 #include <string.h>
 #include <sodium.h>
 #include <time.h>
-#include <sys/time.h>
 #include <sys/resource.h>
 
 forceinline void ascon_loadkey(ascon_key_t* key, const uint8_t* k) {
@@ -212,14 +211,11 @@ long get_mem_usage(){
 }
 
 int main(int argc, char *argv[]) {
-  #define CHUNK_SIZE 4096 + CRYPTO_ABYTES
-
   unsigned char k[CRYPTO_KEYBYTES];
   unsigned char a[16] = "abc123";
-  unsigned char nonce[CRYPTO_NPUBBYTES], h[32], t[32], c[CHUNK_SIZE], plaintext[CHUNK_SIZE - CRYPTO_ABYTES];
+  unsigned char nonce[CRYPTO_NPUBBYTES], h[32], t[32], *c, *plaintext;
   unsigned long long alen = 16;
   unsigned long long mlen = 16;
-  unsigned long long clen;
 
   int result = 0;
     
@@ -232,102 +228,112 @@ int main(int argc, char *argv[]) {
   FILE *hacklab_in, *fp_decrypt, *PMK_Key;
   
   if (strcmp(argv[1], "secret") == 0) {
-    // Open the secret key hacklab file.
-    hacklab_in = fopen("secret.key.hacklab", "rb");
+      // Open the secret key hacklab file.
+      hacklab_in = fopen("secret.key.hacklab", "rb");
+      if (hacklab_in == NULL) {
+              printf("Error opening secret key hacklab.\n");
+              return 1;
+      }
 
-    // Open the decrypt file.
-    fp_decrypt = fopen("secret.key", "wb");
+      // Open the decrypt file.
+      fp_decrypt = fopen("secret.key", "wb");
+      if (fp_decrypt == NULL) {
+              printf("Error opening secret key.\n");
+              return 1;
+      }
   }
 
-  else if (strcmp(argv[1], "pub") == 0) {
-    // Open the public key hacklab file.
-    hacklab_in = fopen("public.key.hacklab", "rb");
+  else if (strcmp(argv[1], "public") == 0) {
+      // Open the public key hacklab file.
+      hacklab_in = fopen("public.key.hacklab", "rb");
+      if (hacklab_in == NULL) {
+              printf("Error opening public key hacklab.\n");
+              return 1;
+      }
 
-    // Open the decrypt file.
-    fp_decrypt = fopen("public.key", "wb");
+      // Open the decrypt file.
+      fp_decrypt = fopen("public.key", "wb");
+      if (fp_decrypt == NULL) {
+              printf("Error opening public key.\n");
+              return 1;
+      }
   }
 
   else if (strcmp(argv[1], "nbit") == 0){
-    // Open the input file.
-    hacklab_in = fopen("nbit.key.hacklab", "rb");
+      // Open the input file.
+      hacklab_in = fopen("nbit.key.hacklab", "rb");
+      if (hacklab_in == NULL) {
+              printf("Error opening nbit key.\n");
+              return 1;
+      }
 
-    // Open the output file.
-    fp_decrypt = fopen("nbit.key", "wb");
+      // Open the output file.
+      fp_decrypt = fopen("nbit.key", "wb");
+      if (fp_decrypt == NULL) {
+              printf("Error opening nbit key.\n");
+              return 1;
+      }
   }
 
   else {
-    printf("\n%s is not a valid argument\n", argv[1]);
-    return 0;
+      printf("\n%s is not a valid argument\n", argv[1]);
+      return 0;
   }
 
   // Open the PMK key.
   PMK_Key = fopen("PMK.key", "rb");
   if (PMK_Key == NULL) {
-    printf("Error opening PMK key\n");
-    return 0;
-  }
-  if (PMK_Key == NULL) {
-    printf("Error opening PMK key\n");
-    return 0;
-  }
-  if (hacklab_in == NULL) {
-    printf("Error opening nbit key.\n");
-    return 1;
-  }
-  if (fp_decrypt == NULL) {
-    printf("Error opening nbit key.\n");
-    return 1;
+      printf("Error opening PMK key\n");
+      return 0;
   }
 
   // reading key
   fread(k, 1, CRYPTO_KEYBYTES, PMK_Key);
-  
-  printf("\n");
-  print('k', k, sizeof k);
+  printf("\nKey: %s\n", k);
+
+  // calculating the size of the file
+  fseek(hacklab_in, 0L, SEEK_END);
+  long int clen = ftell(hacklab_in) - CRYPTO_NPUBBYTES;
+  fseek(hacklab_in, 0L, SEEK_SET);
 
   // Read the nonce.
   fread(nonce, sizeof(char), CRYPTO_NPUBBYTES, hacklab_in);
 
+  c = malloc(clen);
+  plaintext = malloc(clen - 16);
+
   // Read the ciphertext.
   fread(c, sizeof(char), clen, hacklab_in);
 
+  printf("\n");
   print('n', nonce, CRYPTO_NPUBBYTES);
+  printf("\nCiphertext len: %li\n", clen);
   
   printf("\n[*] Decrypting public key hacklab\n");
 
+  clock_t time;
   long baseline = get_mem_usage();
+  time = clock();
 
-  // Start measuring time
-  struct timeval begin, end;
-  gettimeofday(&begin, 0);
-  
-  // Start measuring CPU time
-  clock_t start_cpu= clock();
+	result |= crypto_aead_decrypt(plaintext, &mlen, (void*)0, c, clen, a, alen, nonce, k);
 
-  while(clen = fread(c, sizeof(char), CHUNK_SIZE, hacklab_in)){
-    result |= crypto_aead_decrypt(plaintext, &mlen, (void*)0, c, clen, a, alen, nonce, k);
-    fwrite(plaintext, 1, mlen, fp_decrypt);
-  }
-
-  gettimeofday(&end, 0);
-  long seconds = end.tv_sec - begin.tv_sec;
-  long microseconds = end.tv_usec - begin.tv_usec;
-  double elapsed = seconds + microseconds*1e-6;
-  
-  clock_t end_cpu = clock();
-  double time_taken = (double)(end_cpu - start_cpu)/CLOCKS_PER_SEC;
-  
+  time = clock() - time;
   long memory_usage = get_mem_usage() - baseline;
 
-  printf("\n[+] Public key hacklab decrypted\n");
+  double time_taken = ((double)time)/CLOCKS_PER_SEC; // calculate the elapsed time
 
-  printf("\nASCON-80pq took %f seconds to decrypt (WALL TIME)\n", elapsed);
-  printf("ASCON-80pq took %f seconds to decrypt (CPU TIME)\n", time_taken);
+  fwrite(plaintext, 1, mlen, fp_decrypt);
+
+  printf("\n[+] Public key hacklab decrypted\n");
+  printf("\nASCON-80pq took %f seconds to decrypt\n", time_taken);
   printf("ASCON-80pq used %ld bytes of memory to decrypt\n", memory_usage);
 
   //Close the files.
   fclose(hacklab_in);
   fclose(fp_decrypt);
+
+  free(c);
+  free(plaintext);
 
   return 0;
 }
