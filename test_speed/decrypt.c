@@ -14,6 +14,13 @@
 #include <x86intrin.h>
 #include <unistd.h>
 
+#if !ASCON_INLINE_MODE
+#undef forceinline
+#define forceinline
+#endif
+
+#ifdef ASCON_AEAD_RATE
+
 forceinline void ascon_loadkey(ascon_key_t* key, const uint8_t* k) {
   key->x[0] = KEYROT(0, LOADBYTES(k, 4));
   key->x[1] = LOADBYTES(k + 4, 8);
@@ -358,3 +365,5 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
+
+#endif
