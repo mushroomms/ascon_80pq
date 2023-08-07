@@ -2,18 +2,10 @@
 
 Ascon_80pq C implementation with libsodium which generates a random nonce that is safe to use for cryptography
 
-To compile the file:
+To compile the ref:
 
 ```
 gcc main.c permutations.c printstate.c -o ascon -lsodium
-```
-
-To compile file encryption and decrypton code:
-```
-gcc encrypt.c permutations.c printstate.c -o encrypt -lsodium
-```
-```
-gcc decrypt.c permutations.c printstate.c -o decrypt -lsodium
 ```
 
 ## Test Speed
