@@ -311,13 +311,15 @@ int main(int argc, char *argv[]) {
 
   unsigned int counter;
   unsigned long long min=-1, max=0, total_bytes=0, total_cpu_cycle=0, current=0;
-  double total_time;
+  double total_time_cpu;
     
   FILE *cpu_cycle_file = fopen("cpu_cycle_encrypt.txt", "w");
-  struct timespec begin, end;
+  struct timespec begin_cpu, end_cpu, begin_wall, end_wall;
+
+  clock_gettime(CLOCK_REALTIME, &begin_wall);
 
   while(plaintext_len = fread(plaintext, 1, CHUNK_SIZE, fp_in)){
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &begin);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &begin_cpu);
 
     cpucycles_reset();
     cpucycles_start();
@@ -326,16 +328,16 @@ int main(int argc, char *argv[]) {
 
     cpucycles_stop();
 
-    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_cpu);
 
     fwrite(c, 1, clen, fp_out);
 
-    double time_spent = (end.tv_sec - begin.tv_sec) + (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
+    double time_spent = (end_cpu.tv_sec - begin_cpu.tv_sec) + (end_cpu.tv_nsec - begin_cpu.tv_nsec) / 1000000000.0;
 
     if(plaintext_len == CHUNK_SIZE){
       current = cpucycles_result();
 
-      fprintf(cpu_cycle_file, "%lld  %f\n", current, time_spent);
+      fprintf(cpu_cycle_file, "%lld\n", current);
       
       total_cpu_cycle += current;
       if(current > max){
@@ -346,9 +348,12 @@ int main(int argc, char *argv[]) {
       }
     } 
 
-    total_time += time_spent; 
+    total_time_cpu += time_spent; 
     counter ++;
   }
+
+  clock_gettime(CLOCK_REALTIME, &end_wall);
+  double total_time_wall = (end_wall.tv_sec - begin_wall.tv_sec) + (end_wall.tv_nsec - begin_wall.tv_nsec) / 1000000000.0;
 
   printf("\n[+] Key encrypted\n");
 
@@ -359,8 +364,9 @@ int main(int argc, char *argv[]) {
   printf("Maximum CPU Cycles/Bytes: %.3f\n", (float)max/CHUNK_SIZE);
   printf("Average CPU Cycles/Bytes: %.3f\n", (float)total_cpu_cycle/total_bytes);
 
-  printf("\nTotal CPU time: %f seconds\n", total_time);
-  printf("Total CPU Cycles/Bytes per second: %.3f \n", (float)total_cpu_cycle/total_bytes/total_time);
+  printf("\nWALL time: %f seconds\n", total_time_wall);
+  printf("CPU time: %f seconds\n", total_time_cpu);
+  printf("Total CPU Cycles/Bytes per second: %.3f \n", (float)total_cpu_cycle/total_bytes/total_time_cpu);
 
   fclose(fp_in);
   fclose(fp_out);
