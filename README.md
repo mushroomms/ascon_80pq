@@ -17,7 +17,7 @@ gcc decrypt.c permutations.c printstate.c -o decrypt -lsodium
 ```
 
 ## Test Speed
-The folder contains code which measures:
+The folder Test Speed contains the code which measures:
 1. CPU Cycles per bytes
 2. CPU Time
 3. Wall Time
