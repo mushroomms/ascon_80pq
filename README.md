@@ -16,6 +16,12 @@ gcc encrypt.c permutations.c printstate.c -o encrypt -lsodium
 gcc decrypt.c permutations.c printstate.c -o decrypt -lsodium
 ```
 
+## Test Speed
+The folder contains code which measures:
+1. CPU Cycles per bytes
+2. CPU Time
+3. Wall Time
+
 ## Libsodium installation
 Download a [tarball of libsodium](https://download.libsodium.org/libsodium/releases/), preferably the latest stable version, then follow the ritual:
 
