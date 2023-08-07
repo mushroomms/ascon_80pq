@@ -14,3 +14,5 @@ decrypt: decrypt.c aead.c
 clean:
 	-$(RM) -rf encrypt
 	-$(RM) -rf decrypt
+	-$(RM) -rf decrypt.key
+	-$(RM) -rf public.key.hacklab
