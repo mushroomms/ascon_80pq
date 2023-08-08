@@ -1,12 +1,27 @@
 #include "api.h"
 #include "crypto_aead.h"
 
+#include <string.h>
 #include <stdio.h>
 #include <sodium.h>
 #include <time.h>
 #include <x86intrin.h>
 
 #define CHUNK_SIZE 2048
+
+#define cpucycles(cycles) cycles = __rdtsc()
+#define cpucycles_reset() cpucycles_sum = 0
+#define cpucycles_start() cpucycles(cpucycles_before)
+#define cpucycles_stop()                                 \
+  do                                                     \
+  {                                                      \
+    cpucycles(cpucycles_after);                          \
+    cpucycles_sum += cpucycles_after - cpucycles_before; \
+  } while (0)
+
+#define cpucycles_result() cpucycles_sum
+
+unsigned long long cpucycles_before, cpucycles_after, cpucycles_sum;
 
 size_t rlen_total;
 
@@ -42,22 +57,7 @@ static int decrypt(const char *target_file, const char *source_file) {
   return 0;
 }
 
-int main(void) {
-  #define cpucycles(cycles) cycles = __rdtsc()
-
-  #define cpucycles_reset() cpucycles_sum = 0
-  #define cpucycles_start() cpucycles(cpucycles_before)
-  #define cpucycles_stop()                                 \
-    do                                                     \
-    {                                                      \
-      cpucycles(cpucycles_after);                          \
-      cpucycles_sum += cpucycles_after - cpucycles_before; \
-    } while (0)
-
-  #define cpucycles_result() cpucycles_sum
-
-  unsigned long long cpucycles_before, cpucycles_after, cpucycles_sum;
-
+int main(int argc, char *argv[]) {
   if (sodium_init() != 0) {
     printf("panic! the library couldn't be initialized; it is not safe to use");
     return 1;
@@ -73,8 +73,22 @@ int main(void) {
   cpucycles_reset();
   cpucycles_start();
 
-  if (decrypt("decrypt.key", "public.key.hacklab") != 0) {
-    return 1;
+  if (strcmp(argv[1], "secret") == 0){
+    if (decrypt("secret.key", "secret.key.hacklab") != 0) {
+      return 1;
+    }
+  }
+
+  if (strcmp(argv[1], "pub") == 0){
+    if (decrypt("decrypt.key", "public.key.hacklab") != 0) {
+      return 1;
+    }
+  }
+
+  if (strcmp(argv[1], "nbit") == 0){
+    if (decrypt("nbit.key", "nbit.key.hacklab") != 0) {
+      return 1;
+    }
   }
 
   cpucycles_stop();

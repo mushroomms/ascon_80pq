@@ -1,12 +1,27 @@
 #include "api.h"
 #include "crypto_aead.h"
 
+#include <string.h>
 #include <stdio.h>
 #include <sodium.h>
 #include <time.h>
 #include <x86intrin.h>
 
 #define CHUNK_SIZE 2048
+
+#define cpucycles(cycles) cycles = __rdtsc()
+#define cpucycles_reset() cpucycles_sum = 0
+#define cpucycles_start() cpucycles(cpucycles_before)
+#define cpucycles_stop()                                 \
+  do                                                     \
+  {                                                      \
+    cpucycles(cpucycles_after);                          \
+    cpucycles_sum += cpucycles_after - cpucycles_before; \
+  } while (0)
+
+#define cpucycles_result() cpucycles_sum
+
+unsigned long long cpucycles_before, cpucycles_after, cpucycles_sum;
 
 size_t rlen_total;
 
@@ -44,21 +59,10 @@ static int encrypt(const char *target_file, const char *source_file) {
   return 0;
   }
 
-int main(void) {
-  #define cpucycles(cycles) cycles = __rdtsc()
-
-  #define cpucycles_reset() cpucycles_sum = 0
-  #define cpucycles_start() cpucycles(cpucycles_before)
-  #define cpucycles_stop()                                 \
-    do                                                     \
-    {                                                      \
-      cpucycles(cpucycles_after);                          \
-      cpucycles_sum += cpucycles_after - cpucycles_before; \
-    } while (0)
-
-  #define cpucycles_result() cpucycles_sum
-
-  unsigned long long cpucycles_before, cpucycles_after, cpucycles_sum;
+int main(int argc, char *argv[]) {
+  
+  FILE *cpu_cycle_file = fopen("cpu_cycle_encrypt.txt", "w");
+  struct timespec begin_cpu, end_cpu, begin_wall, end_wall;
 
   if (sodium_init() != 0) {
     printf("panic! the library couldn't be initialized; it is not safe to use");
@@ -67,18 +71,28 @@ int main(void) {
 
   printf("\n[*] Attempting to encrypt key\n");
 
-  FILE *cpu_cycle_file = fopen("cpu_cycle_encrypt.txt", "w");
-  struct timespec begin_cpu, end_cpu, begin_wall, end_wall;
-
   clock_gettime(CLOCK_REALTIME, &begin_wall);
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &begin_cpu);
 
   cpucycles_reset();
   cpucycles_start();
 
-  if (encrypt("public.key.hacklab", "public.key") != 0)
-  {
-    return 1;
+  if (strcmp(argv[1], "secret") == 0){
+    if (encrypt("secret.key.hacklab", "secret.key") != 0) {
+      return 1;
+    }
+  }
+
+  if (strcmp(argv[1], "pub") == 0){
+    if (encrypt("public.key.hacklab", "public.key") != 0) {
+      return 1;
+    }
+  }
+
+  if (strcmp(argv[1], "nbit") == 0){
+    if (encrypt("nbit.key.hacklab", "nbit.key") != 0) {
+      return 1;
+    }
   }
 
   cpucycles_stop();
