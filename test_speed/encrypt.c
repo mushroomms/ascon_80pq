@@ -21,13 +21,21 @@
 
 #define cpucycles_result() cpucycles_sum
 
-unsigned long long cpucycles_before, cpucycles_after, cpucycles_sum;
-
 size_t rlen_total;
 double total_cpucycles;
 struct timespec begin_cpu, end_cpu, begin_wall, end_wall;
+unsigned long long cpucycles_before, cpucycles_after, cpucycles_sum;
 
-static int encrypt(const char *target_file, const char *source_file) {
+char *showhex(uint8_t a[], int size);
+
+char *showhex(uint8_t a[], int size) {
+      char *s = malloc(size * 2 + 1);
+      for (int i = 0; i < size; i++)
+            sprintf(s + i * 2, "%02x", a[i]);
+      return (s);
+}
+
+static int encrypt(const char *target_file, const char *source_file, const char *pmk_keyfile) {
   #define ADDITIONAL_DATA (const unsigned char *)"123456"
   #define ADDITIONAL_DATA_LEN 6
 
@@ -37,17 +45,32 @@ static int encrypt(const char *target_file, const char *source_file) {
   unsigned char key[CRYPTO_KEYBYTES];
   unsigned long long clen;
 
-  FILE *fp_t, *fp_s, *pmk_key;
-
   size_t rlen;
 
-  pmk_key = fopen("PMK.key", "rb");
-  fp_s = fopen(source_file, "rb");
-  fp_t = fopen(target_file, "wb");
+  FILE *pmk_key = fopen(pmk_keyfile, "rb");
+  if (pmk_key == NULL) {
+    printf("\nPMK Key with the file name [%s] cannot be found!\n", pmk_keyfile);
+    return 1;
+  }
+  FILE *fp_s = fopen(source_file, "rb");
+  if (fp_s == NULL) {
+    printf("\nSource file to be encrypted with the file name [%s] cannot be found!\n", source_file);
+    return 1;
+  }
+  FILE *fp_t = fopen(target_file, "wb");
+  if (fp_t == NULL) {
+    printf("\nTarger file with the file name [%s] cannot be created!\n", target_file);
+    return 1;
+  }
 
   randombytes_buf(nonce, sizeof(nonce));
   fwrite(nonce, sizeof(unsigned char), sizeof(nonce), fp_t); // Writing nonce into file
   fread(key, 1, CRYPTO_KEYBYTES, pmk_key); // Reading PMK key file
+
+  printf("\nKey: %s\n", showhex(key, CRYPTO_KEYBYTES));
+  printf("Nonce: %s\n", showhex(nonce, CRYPTO_NPUBBYTES));
+
+  printf("\n[*] Attempting to encrypt [%s]\n", source_file);
 
   clock_gettime(CLOCK_REALTIME, &begin_wall);
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &begin_cpu);
@@ -74,30 +97,25 @@ static int encrypt(const char *target_file, const char *source_file) {
   }
 
 int main(int argc, char *argv[]) {
+  if (argc != 4) {
+    printf("Usage: %s <FILENAME> <ENCRYPTED_FILENAME> <KEY>\n", argv[0]);
+    return 1;
+  }
+
   if (sodium_init() != 0) {
     printf("panic! the library couldn't be initialized; it is not safe to use");
     return 1;
   }
 
-  printf("\n[*] Attempting to encrypt key\n");
+  char *KEY_NAME = argv[1];
+  char *ENCRYPTED_HACKLAB = argv[2];
+  char *PMK_KEY = argv[3];
 
-  if (strcmp(argv[1], "secret") == 0){
-    if (encrypt("secret.key.hacklab", "secret.key") != 0) {
-      return 1;
-    }
-  }
-  if (strcmp(argv[1], "pub") == 0){
-    if (encrypt("public.key.hacklab", "public.key") != 0) {
-      return 1;
-    }
-  }
-  if (strcmp(argv[1], "nbit") == 0){
-    if (encrypt("nbit.key.hacklab", "nbit.key") != 0) {
-      return 1;
-    }
+  if (encrypt(ENCRYPTED_HACKLAB, KEY_NAME, PMK_KEY) != 0) {
+    return 1;
   }
 
-  printf("\n[+] Key encrypted\n");
+  printf("\n[+] [%s] encrypted to [%s] successfully\n", KEY_NAME, ENCRYPTED_HACKLAB);
 
   double total_time_cpu = (end_cpu.tv_sec - begin_cpu.tv_sec) + (end_cpu.tv_nsec - begin_cpu.tv_nsec) / 1000000000.0;
   double total_time_wall = (end_wall.tv_sec - begin_wall.tv_sec) + (end_wall.tv_nsec - begin_wall.tv_nsec) / 1000000000.0;
