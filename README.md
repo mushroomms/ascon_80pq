@@ -1,15 +1,8 @@
 # ascon_c
 
 Ascon_80pq C implementation with libsodium which generates a random nonce that is safe to use for cryptography
-
-To compile the ref:
-
-```
-gcc main.c permutations.c printstate.c -o ascon -lsodium
-```
-
-## Test Speed
-The folder Test Speed contains the code which measures:
+<br><br>
+The current repository contains the code which measures:
 1. CPU Cycles per bytes
 2. CPU Time
 3. Wall Time
