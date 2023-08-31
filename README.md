@@ -7,13 +7,23 @@ The current repository contains the code which measures:
 2. CPU Time
 3. Wall Time
 
-To run test_speed, simply run the Makefile:
+To compile both encrypt.c & decrypt.c, simply run the Makefile:
 ```
 make all
 ```
-After running test_speed, simply clean by running:
+Simply clean by running:
 ```
 make clean
+```
+
+## Usage
+Usage of encrypt.c:
+```
+./encrypt <plaintext file> <encrypted file> <key file>
+```
+Usage of decrypt.c:
+```
+./decrypt <encrypted file> <plaintext file> <key file>
 ```
 
 ## Libsodium installation
